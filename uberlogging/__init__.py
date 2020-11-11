@@ -11,6 +11,7 @@ from enum import Enum
 from logging.config import dictConfig
 from typing import Any, ClassVar, List, Tuple
 
+import re
 import coloredlogs
 import structlog
 from humanfriendly.terminal import ansi_wrap
@@ -240,7 +241,8 @@ class SeverityJsonFormatter(jsonlogger.JsonFormatter):
     def format(self, record):
         if self.contextvars:
             record.contextvars = self.renderer.render_contextvars(self.contextvars)
-        return super().format(record)
+        msg = super().format(record)
+        return re.sub(r"(\w*(password|pwd)=)([^ ]*(?:,(?!\w+=|$)[^,]*)*)", lambda m: "{}*****".format(m.group(1)), msg or "")
 
 
 class Formatter(logging.Formatter):
@@ -265,7 +267,8 @@ class Formatter(logging.Formatter):
                                   + self.renderer.render_contextvars(self.contextvars))
         else:
             record.contextvars = ""
-        return super().format(record)
+        msg = super().format(record)
+        return re.sub(r"(\w*(password|pwd)=)([^ ]*(?:,(?!\w+=|$)[^,]*)*)", lambda m: "{}*****".format(m.group(1)), msg or "")
 
 
 class ColoredFormatter(Formatter, coloredlogs.ColoredFormatter):
