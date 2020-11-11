@@ -220,6 +220,11 @@ def _build_conf(fmt, datefmt, logger_confs, logger_confs_list, style: Style, roo
     return conf
 
 
+def mask_password(msg):
+    return re.sub(r"(\w*(password|pwd)=)([^ ]*(?:,(?!\w+=|$)[^,]*)*)", lambda m: "{}*****".format(m.group(1)),
+                  msg or "")
+
+
 class SeverityJsonFormatter(jsonlogger.JsonFormatter):
 
     def __init__(self, *args, contextvars: Tuple[ContextVar] = (), **kwargs):
@@ -242,7 +247,7 @@ class SeverityJsonFormatter(jsonlogger.JsonFormatter):
         if self.contextvars:
             record.contextvars = self.renderer.render_contextvars(self.contextvars)
         msg = super().format(record)
-        return re.sub(r"(\w*(password|pwd)=)([^ ]*(?:,(?!\w+=|$)[^,]*)*)", lambda m: "{}*****".format(m.group(1)), msg or "")
+        return mask_password(msg)
 
 
 class Formatter(logging.Formatter):
@@ -268,7 +273,7 @@ class Formatter(logging.Formatter):
         else:
             record.contextvars = ""
         msg = super().format(record)
-        return re.sub(r"(\w*(password|pwd)=)([^ ]*(?:,(?!\w+=|$)[^,]*)*)", lambda m: "{}*****".format(m.group(1)), msg or "")
+        return mask_password(msg)
 
 
 class ColoredFormatter(Formatter, coloredlogs.ColoredFormatter):
