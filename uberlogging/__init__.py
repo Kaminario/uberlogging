@@ -34,6 +34,24 @@ default_datefmt = "%Y-%m-%dT%H:%M:%S"
 
 padding = "    "
 
+_PATTERNS_TO_MASK = {}
+
+
+def update_patterns_to_mask(key: str, value: str):
+    global _PATTERNS_TO_MASK
+    if not value:
+        _PATTERNS_TO_MASK.pop(key, None)
+    else:
+        _PATTERNS_TO_MASK[key] = value
+
+
+def mask_msg(msg: str):
+    global _PATTERNS_TO_MASK
+    if _PATTERNS_TO_MASK:
+        return re.sub(rf'({"|".join(_PATTERNS_TO_MASK.values())})', '****', msg)
+    else:
+        return msg
+
 
 def get_logger(*args, **kwargs) -> None:
     raise AttributeError("uberlogging.get_logger() was deprecated and removed. "
@@ -220,11 +238,6 @@ def _build_conf(fmt, datefmt, logger_confs, logger_confs_list, style: Style, roo
     return conf
 
 
-def mask_password(msg):
-    return re.sub(r"(\w*(password|pwd)=)([^ ]*(?:,(?!\w+=|$)[^,]*)*)", lambda m: "{}*****".format(m.group(1)),
-                  msg or "")
-
-
 class SeverityJsonFormatter(jsonlogger.JsonFormatter):
 
     def __init__(self, *args, contextvars: Tuple[ContextVar] = (), **kwargs):
@@ -247,7 +260,7 @@ class SeverityJsonFormatter(jsonlogger.JsonFormatter):
         if self.contextvars:
             record.contextvars = self.renderer.render_contextvars(self.contextvars)
         msg = super().format(record)
-        return mask_password(msg)
+        return mask_msg(msg)
 
 
 class Formatter(logging.Formatter):
@@ -273,7 +286,7 @@ class Formatter(logging.Formatter):
         else:
             record.contextvars = ""
         msg = super().format(record)
-        return mask_password(msg)
+        return mask_msg(msg)
 
 
 class ColoredFormatter(Formatter, coloredlogs.ColoredFormatter):
